@@ -9,12 +9,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-/**
- * Reusable function to send emails
- * @param {string} to - Recipient email
- * @param {string} subject - Email subject
- * @param {string} htmlContent - HTML body content
- */
+
 const sendEmail = async (to, subject, htmlContent) => {
   try {
     const mailOptions = {

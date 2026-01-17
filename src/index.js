@@ -1,17 +1,25 @@
 const express = require('express');
-const app = express();
-import mongoose from 'mongoose';
-import { connectDB } from './db.js';
+const cors = require('cors');
+const mongoose = require('mongoose');
+const connectDB = require('./config/db.js');
 
+const adminroutes = require('./router/super_admin.js');
+const applicantroutes = require('./router/applicants.js');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Connect to Database
 connectDB();
 
-// Middleware to parse JSON (Standard for modern APIs)
-app.use(express.json());
+// Middleware
+app.use(cors());
+app.use(express.json()); 
+app.use(express.urlencoded({ extended: true }));
 
-// Basic Route
-app.get('/', (req, res) => {
-  res.send('Hello World!');
-});
+// Routes
+app.use('/api/admin', adminroutes);
+app.use('/api/applicants', applicantroutes);
 
 // Start the server
 app.listen(port, () => {

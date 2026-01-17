@@ -1,27 +1,42 @@
 const express = require('express');
 const router = express.Router();
-import { superAdminValidationSchema } from '../utils/joi/poc';
-import { createSuperAdmin } from '../controller/super_admin';
-import { createpoc } from '../controller/super_admin';
-import { getrcetapplicants } from '../controller/super_admin';
-import {getrcetapplicantsbyid} from '../controller/super_admin';
-import { getbtechapplicants } from '../controller/super_admin';
-import { getbtechapplicantsbyid } from '../controller/super_admin';
-import { getllbapplicants } from '../controller/super_admin';
-import { getllbapplicantsbyid } from '../controller/super_admin';
 
+const { 
+  createSuperAdmin, 
+  createpoc, 
+  getrcetapplicants, 
+  getrcetapplicantsbyid, 
+  getbtechapplicants, 
+  getbtechapplicantsbyid, 
+  getllbapplicants, 
+  getllbapplicantsbyid 
+} = require('../controller/super_admin.js');
 
+const  {superAdminValidationSchema}  = require('../utils/joi/poc.js');
 
-import { superAdminValidationSchema } from '../utils/joi/poc.js'
+const validate = (schema) => {
+  return (req, res, next) => {
+    const { error } = schema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ 
+        success: false, 
+        message: error.details[0].message 
+      });
+    }
+    next();
+  };
+};
 
-// The validation is passed as the second parameter here
-router.post('/signup/superadmin', validate(superAdminValidationSchema), createSuperAdmin);
-router.post('/signup/poc', validate(superAdminValidationSchema), createpoc );
-router.get('/rcetapplicants', getrcetapplicants );
-router.get('/rcetapplicantsbyid',getrcetapplicantsbyid );
+router.post('/create/superadmin', validate(superAdminValidationSchema), createSuperAdmin);
+router.post('/create/poc', validate(superAdminValidationSchema), createpoc);
+
+router.get('/rcetapplicants', getrcetapplicants);
+router.get('/rcetapplicants/:id', getrcetapplicantsbyid);
+
 router.get('/btechapplicants', getbtechapplicants);
-router.get('/btechapplicants', getbtechapplicantsbyid );
-router.get('/btechapplicants', getllbapplicants);
-router.get('/btechapplicants', getllbapplicantsbyid);
-  
-  
+router.get('/btechapplicants/:id', getbtechapplicantsbyid);
+
+router.get('/llbapplicants', getllbapplicants);
+router.get('/llbapplicants/:id', getllbapplicantsbyid);
+
+module.exports = router;

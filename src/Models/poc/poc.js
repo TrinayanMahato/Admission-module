@@ -30,6 +30,6 @@ const superAdminSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-const SuperAdmin = mongoose.model('SuperAdmin', superAdminSchema);
+const POC = mongoose.model('POC', superAdminSchema);
 
-module.exports = SuperAdmin;
+module.exports = POC;
