@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
+    userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'TempUser', // This MUST match the model name used in mongoose.model()
+    required: true
+  },
   fullName: {
     type: String,
     required: true
