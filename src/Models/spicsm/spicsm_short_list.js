@@ -37,14 +37,22 @@ const admissionSchema = new mongoose.Schema({
       middleName: String,
       lastName: String,
       email: String,
-      mobileNo: String
+      mobileNo: String,
+      income: { 
+        type: Number,
+        default: 0
+      }
     },
     mother: {
       firstName: String,
       middleName: String,
       lastName: String,
       email: String,
-      mobileNo: String
+      mobileNo: String,
+      income: { 
+        type: Number,
+        default: 0
+      }
     },
     spouse: {
       firstName: String,
@@ -113,7 +121,8 @@ const admissionSchema = new mongoose.Schema({
     leavingCertificate: String,
     aadharCard: String,
     profilePhoto: String,
-    signature: String
+    signature: String,
+    categoryCertificate: String
   },
   fees:{
     type:String,
@@ -128,6 +137,6 @@ const admissionSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-const spicsmrcetAdmission = mongoose.model('spicsmrcetAdmission', admissionSchema);
+const SPICSMShortList = mongoose.model('SPICSMShortList', admissionSchema);
 
-module.exports = spicsmrcetAdmission;
+module.exports = SPICSMShortList;

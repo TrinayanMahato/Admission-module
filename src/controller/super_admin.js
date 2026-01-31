@@ -1,8 +1,8 @@
-// Strictly using CommonJS require as type=module is removed
-const SuperAdmin = require('../Models/super_admin.js');
-const RCET_applicants = require('../Models/rcet candidates.js');
-const Btech_applicants = require('../Models/Btech applicants.js');
-const BBA_LLB_applicants = require('../Models/BBA LLB applicants.js');
+const SuperAdmin = require('../Models/super_admin');
+const POC = require('../Models/poc');
+const RCET_applicants = require('../Models/rcet candidates');
+const Btech_applicants = require('../Models/Btech applicants');
+const BBA_LLB_applicants = require('../Models/BBA LLB applicants');
 
 // --- SUPER ADMIN / POC CONTROLLERS ---
 
@@ -31,7 +31,7 @@ exports.createpoc = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'A user with this email already exists' });
     }
 
-    const newAdmin = await SuperAdmin.create(req.body);
+    const newAdmin = await poc.create(req.body);
 
     res.status(201).json({
       status: 'success',
@@ -120,5 +120,33 @@ exports.getllbapplicantsbyid = async (req, res) => {
     res.status(200).json({ success: true, data: admissionData });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get applicants by department
+exports.getApplicantsByDepartment = async (req, res) => {
+  try {
+    const { department } = req.params;
+    const applicants = await RCET_applicants.find({ department }).sort({ createdAt: -1 }).lean();
+    
+    if (!applicants || applicants.length === 0) {
+      return res.status(200).json({ 
+        success: true, 
+        message: `No applications found for department: ${department}`, 
+        count: 0, 
+        data: [] 
+      });
+    }
+    
+    res.status(200).json({ 
+      success: true, 
+      count: applicants.length, 
+      data: applicants 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 };

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const superAdminSchema = new mongoose.Schema({
+const pocSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -22,14 +22,15 @@ const superAdminSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    required: true
+    default: 'poc'
   },
   department: {
     type: String,
-    required: true
+    required: true,
+    enum: ['saset', 'sbsfi', 'sclml', 'sicmss', 'sicssl', 'sissp', 'sitaics', 'spes', 'spicsm']
   }
 }, { timestamps: true });
 
-const SuperAdmin = mongoose.model('SuperAdmin', superAdminSchema);
+const POC = mongoose.model('POC', pocSchema);
 
-module.exports = poc;
+module.exports = POC;

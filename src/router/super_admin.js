@@ -9,7 +9,8 @@ const {
   getbtechapplicants, 
   getbtechapplicantsbyid, 
   getllbapplicants, 
-  getllbapplicantsbyid 
+  getllbapplicantsbyid,
+  getApplicantsByDepartment 
 } = require('../controller/super_admin.js');
 
 const  {superAdminValidationSchema}  = require('../utils/joi/poc.js');
@@ -38,5 +39,6 @@ router.get('/btechapplicants/:id', getbtechapplicantsbyid);
 
 router.get('/llbapplicants', getllbapplicants);
 router.get('/llbapplicants/:id', getllbapplicantsbyid);
+router.get('/department/:department', getApplicantsByDepartment);
 
 module.exports = router;

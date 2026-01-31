@@ -1,14 +1,27 @@
-// Strictly using CommonJS require as type=module is removed
-const RCET_applicants = require('../Models/rcet candidates.js');
-const Btech_applicants = require('../Models/Btech applicants.js');
-const BBA_LLB_applicants = require('../Models/BBA LLB applicants.js');
-const User = require('../Models/user.js');
-const tempUser = require('../Models/temp users.js');
-const { sendMail } = require('../utils/email.js');
+const RCET_applicants = require('../Models/rcet candidates');
+const Btech_applicants = require('../Models/Btech applicants');
+const BBA_LLB_applicants = require('../Models/BBA LLB applicants');
+const User = require('../Models/user');
+const TempUser = require('../Models/temp users');
+const { sendMail } = require('../utils/email');
 
 exports.createAdmissionrcet = async (req, res) => {
   try {
     const admissionData = new RCET_applicants(req.body);
+
+    // Handle file uploads
+    if (req.files) {
+      if (!admissionData.documents) admissionData.documents = {};
+      const fileFields = ['marksheet12', 'birthCertificate', 'leavingCertificate', 'aadharCard', 'profilePhoto', 'signature', 'categoryCertificate'];
+
+      fileFields.forEach(field => {
+        if (req.files[field] && req.files[field].length > 0) {
+          // Storing relative path for access
+          admissionData.documents[field] = '/uploads/' + req.files[field][0].filename;
+        }
+      });
+    }
+
     const savedAdmission = await admissionData.save();
 
     res.status(201).json({
@@ -28,6 +41,19 @@ exports.createAdmissionrcet = async (req, res) => {
 exports.createAdmissionbtech = async (req, res) => {
   try {
     const newAdmission = new Btech_applicants(req.body);
+
+    // Handle file uploads
+    if (req.files) {
+      if (!newAdmission.documents) newAdmission.documents = {};
+      const fileFields = ['marksheet12', 'birthCertificate', 'leavingCertificate', 'aadharCard', 'profilePhoto', 'signature', 'categoryCertificate'];
+
+      fileFields.forEach(field => {
+        if (req.files[field] && req.files[field].length > 0) {
+          newAdmission.documents[field] = '/uploads/' + req.files[field][0].filename;
+        }
+      });
+    }
+
     const savedAdmission = await newAdmission.save();
 
     res.status(201).json({
@@ -47,6 +73,19 @@ exports.createAdmissionbtech = async (req, res) => {
 exports.createAdmissionllb = async (req, res) => {
   try {
     const newApplicant = new BBA_LLB_applicants(req.body);
+
+    // Handle file uploads
+    if (req.files) {
+      if (!newApplicant.documents) newApplicant.documents = {};
+      const fileFields = ['marksheet12', 'birthCertificate', 'leavingCertificate', 'aadharCard', 'profilePhoto', 'signature', 'categoryCertificate'];
+
+      fileFields.forEach(field => {
+        if (req.files[field] && req.files[field].length > 0) {
+          newApplicant.documents[field] = '/uploads/' + req.files[field][0].filename;
+        }
+      });
+    }
+
     const savedApplicant = await newApplicant.save();
 
     res.status(201).json({
@@ -100,7 +139,7 @@ exports.registerUser = async (req, res) => {
       data: {
         id: savedUser._id,
         email: savedUser.email,
-        code: savedUser.code 
+        code: savedUser.code
       }
     });
 
@@ -132,9 +171,9 @@ exports.confirmregisterUser = async (req, res) => {
     }
 
     const newUser = new User({
-      userId: user._id, 
+      userId: user._id,
       fullName: user.fullName,
-      email: user.email, 
+      email: user.email,
       phone: user.phone,
       password: user.password,
       confirmPassword: user.confirmPassword

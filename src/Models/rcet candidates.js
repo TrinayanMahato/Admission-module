@@ -37,14 +37,22 @@ const admissionSchema = new mongoose.Schema({
       middleName: String,
       lastName: String,
       email: String,
-      mobileNo: String
+      mobileNo: String,
+      income: { 
+        type: Number,
+        default: 0
+      }
     },
     mother: {
       firstName: String,
       middleName: String,
       lastName: String,
       email: String,
-      mobileNo: String
+      mobileNo: String,
+      income: { 
+        type: Number,
+        default: 0
+      }
     },
     spouse: {
       firstName: String,
@@ -115,7 +123,8 @@ const admissionSchema = new mongoose.Schema({
     leavingCertificate: String,
     aadharCard: String,
     profilePhoto: String,
-    signature: String
+    signature: String,
+    categoryCertificate: String
   },
   fees:{
     type:String,

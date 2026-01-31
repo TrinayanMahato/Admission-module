@@ -19,10 +19,9 @@ const tempuserSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  code:{
-    type:number,
-    required:true,
-
+  code: {
+    type: Number,
+    required: true
   },
   confirmPassword: {
     type: String,
@@ -30,6 +29,6 @@ const tempuserSchema = new mongoose.Schema({
   }
 });
 
-const tempUser = mongoose.model('User', tempuserSchema);
+const tempUser = mongoose.model('TempUser', tempuserSchema);
 
 module.exports = tempUser;
