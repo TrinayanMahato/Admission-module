@@ -28,4 +28,4 @@ const sendEmail = async (to, subject, htmlContent) => {
   }
 };
 
-module.exports = sendEmail;
+module.exports = { sendMail: sendEmail };

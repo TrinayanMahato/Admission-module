@@ -31,7 +31,7 @@ exports.createpoc = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'A user with this email already exists' });
     }
 
-    const newAdmin = await poc.create(req.body);
+    const newAdmin = await POC.create(req.body);
 
     res.status(201).json({
       status: 'success',
@@ -128,25 +128,25 @@ exports.getApplicantsByDepartment = async (req, res) => {
   try {
     const { department } = req.params;
     const applicants = await RCET_applicants.find({ department }).sort({ createdAt: -1 }).lean();
-    
+
     if (!applicants || applicants.length === 0) {
-      return res.status(200).json({ 
-        success: true, 
-        message: `No applications found for department: ${department}`, 
-        count: 0, 
-        data: [] 
+      return res.status(200).json({
+        success: true,
+        message: `No applications found for department: ${department}`,
+        count: 0,
+        data: []
       });
     }
-    
-    res.status(200).json({ 
-      success: true, 
-      count: applicants.length, 
-      data: applicants 
+
+    res.status(200).json({
+      success: true,
+      count: applicants.length,
+      data: applicants
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };

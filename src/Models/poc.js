@@ -27,7 +27,7 @@ const pocSchema = new mongoose.Schema({
   department: {
     type: String,
     required: true,
-    enum: ['saset', 'sbsfi', 'sclml', 'sicmss', 'sicssl', 'sissp', 'sitaics', 'spes', 'spicsm']
+    enum: ['saset', 'sbsfi', 'sclml', 'sicmss', 'sicssl', 'sisdss', 'sissp', 'sitaics', 'spes', 'spicsm']
   }
 }, { timestamps: true });
 

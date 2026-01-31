@@ -126,7 +126,7 @@ exports.registerUser = async (req, res) => {
       });
     }
 
-    const newUser = new tempUser({
+    const newUser = new TempUser({
       ...req.body,
       code: registrationCode
     });
@@ -154,7 +154,7 @@ exports.registerUser = async (req, res) => {
 exports.confirmregisterUser = async (req, res) => {
   try {
     const { userId, code } = req.body;
-    const user = await tempUser.findById(userId);
+    const user = await TempUser.findById(userId);
 
     if (!user) {
       return res.status(404).json({

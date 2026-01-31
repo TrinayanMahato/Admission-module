@@ -12,6 +12,7 @@ const admissionSchema = new mongoose.Schema({
     religion: { type: String },
     nationality: { type: String, default: 'Indian' },
     castCategory: { type: String },
+    physicalDisability: { type: String, enum: ['Yes', 'No'], default: 'No' },
     bloodGroup: { type: String },
     aadharCardNo: { type: String },
     address: {
@@ -78,15 +79,16 @@ const admissionSchema = new mongoose.Schema({
     transferCertificate: { type: String, required: true },
     migrationCertificate: { type: String },
     casteCertificate: { type: String },
-    incomeCertificate: { type: String }
+    incomeCertificate: { type: String },
+    disabilityCertificate: { type: String }
   },
   // Step 5: Payment Details
   paymentDetails: {
     transactionId: { type: String, required: true },
     amount: { type: Number, required: true },
     paymentDate: { type: Date, required: true },
-    paymentStatus: { 
-      type: String, 
+    paymentStatus: {
+      type: String,
       enum: ['Pending', 'Completed', 'Failed'],
       default: 'Pending'
     },
@@ -98,7 +100,7 @@ const admissionSchema = new mongoose.Schema({
   verificationToken: { type: String },
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
-  
+
   // For tracking
   course: { type: String, required: true },
   department: { type: String, required: true },

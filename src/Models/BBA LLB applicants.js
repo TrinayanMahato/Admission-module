@@ -17,7 +17,7 @@ const admissionSchema = new mongoose.Schema({
     address: {
       current: {
         street: String,
-        statxe: String,
+        state: String,
         district: String,
         pincode: String
       },
@@ -38,7 +38,7 @@ const admissionSchema = new mongoose.Schema({
       lastName: String,
       email: String,
       mobileNo: String,
-      income: { 
+      income: {
         type: Number,
         default: 0
       }
@@ -49,7 +49,7 @@ const admissionSchema = new mongoose.Schema({
       lastName: String,
       email: String,
       mobileNo: String,
-      income: { 
+      income: {
         type: Number,
         default: 0
       }
@@ -98,6 +98,7 @@ const admissionSchema = new mongoose.Schema({
 
   // Step 4: Other Details
   otherDetails: {
+    physicalDisability: { type: String, enum: ['Yes', 'No'], default: 'No' },
     chronicAilment: { type: String, default: 'No' },
     academicProbation: { type: String, default: 'No' },
     hostelRequired: { type: String, default: 'No' },
@@ -125,11 +126,12 @@ const admissionSchema = new mongoose.Schema({
     aadharCard: String,
     profilePhoto: String,
     signature: String,
-    categoryCertificate: String
+    categoryCertificate: String,
+    disabilityCertificate: String
   },
-  fees:{
-    type:String,
-    enum:['due','paid'],
+  fees: {
+    type: String,
+    enum: ['due', 'paid'],
 
   },
 
