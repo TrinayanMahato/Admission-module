@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-    userId: {
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'TempUser', // This MUST match the model name used in mongoose.model()
     required: true
@@ -26,6 +26,11 @@ const userSchema = new mongoose.Schema({
   confirmPassword: {
     type: String,
     required: true
+  },
+  applicationFees: {
+    type: String,
+    enum: ['due', 'paid'],
+    default: 'due'
   }
 });
 

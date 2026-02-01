@@ -176,7 +176,8 @@ exports.confirmregisterUser = async (req, res) => {
       email: user.email,
       phone: user.phone,
       password: user.password,
-      confirmPassword: user.confirmPassword
+      confirmPassword: user.confirmPassword,
+      applicationFees: 'due' // Default status
     });
 
     await newUser.save();

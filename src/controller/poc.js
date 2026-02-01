@@ -6,6 +6,7 @@ const SuperAdmin = require('../Models/super_admin.js');
 const User = require('../Models/user.js');
 const TempUser = require('../Models/temp users.js');
 const POC = require('../Models/poc.js');
+const { sendMail } = require('../utils/email.js');
 
 // Import models from subdirectories with correct file paths and model names
 const SASET = {
@@ -404,6 +405,139 @@ exports.generateShortlist = async (req, res) => {
 
     await ShortlistModel.insertMany(docsToInsert);
 
+    // 8. Send Email Notifications to Shortlisted Candidates
+    console.log('📧 Sending email notifications to shortlisted candidates...');
+
+    const emailPromises = finalShortlist.map(async (candidate, index) => {
+      try {
+        const email = candidate.studentDetails?.email;
+        const fullName = candidate.studentDetails?.fullName;
+
+        if (!email || !fullName) {
+          console.warn(`⚠️ Skipping email for candidate at index ${index}: Missing email or name`);
+          return { success: false, reason: 'Missing email or name', candidate: fullName || 'Unknown' };
+        }
+
+        // Determine selection category
+        let selectionCategory = 'General (Open Merit)';
+        let isPwdCandidate = isPwd(candidate);
+
+        if (index >= finalGen.length) {
+          // Candidate is from reserved category
+          const castCategory = (candidate.studentDetails?.castCategory || '').toUpperCase();
+          if (castCategory.includes('OBC')) selectionCategory = 'OBC (Other Backward Class)';
+          else if (castCategory.includes('SC') && !castCategory.includes('SCHOOL')) selectionCategory = 'SC (Scheduled Caste)';
+          else if (castCategory.includes('ST') && !castCategory.includes('STUDENT')) selectionCategory = 'ST (Scheduled Tribe)';
+          else if (castCategory.includes('EWS') || castCategory.includes('ECONOMIC')) selectionCategory = 'EWS (Economically Weaker Section)';
+        }
+
+        // Get candidate's score
+        const candidateScore = scoreGetter(candidate);
+
+        // Email subject
+        const subject = `🎉 Congratulations! Shortlisted for ${department.toUpperCase()} Admission`;
+
+        // Email HTML content
+        const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+              .header h1 { margin: 0; font-size: 28px; }
+              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+              .info-box { background: white; padding: 20px; margin: 20px 0; border-left: 4px solid #667eea; border-radius: 5px; }
+              .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+              .info-row:last-child { border-bottom: none; }
+              .label { font-weight: bold; color: #555; }
+              .value { color: #333; }
+              .badge { display: inline-block; padding: 5px 15px; background: #667eea; color: white; border-radius: 20px; font-size: 12px; }
+              .pwd-badge { background: #10b981; }
+              .footer { text-align: center; color: #777; margin-top: 30px; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🎉 Congratulations!</h1>
+                <p style="margin: 10px 0 0 0; font-size: 16px;">You've Been Shortlisted</p>
+              </div>
+              <div class="content">
+                <p>Dear <strong>${fullName}</strong>,</p>
+                <p>We are pleased to inform you that you have been <strong>shortlisted</strong> for admission based on your merit and application.</p>
+                
+                <div class="info-box">
+                  <h3 style="margin-top: 0; color: #667eea;">📋 Selection Details</h3>
+                  <div class="info-row">
+                    <span class="label">Department:</span>
+                    <span class="value"><strong>${department.toUpperCase()}</strong></span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">Category:</span>
+                    <span class="value"><span class="badge">${selectionCategory}</span></span>
+                  </div>
+                  ${isPwdCandidate ? `
+                  <div class="info-row">
+                    <span class="label">Special Quota:</span>
+                    <span class="value"><span class="badge pwd-badge">PwD Reservation</span></span>
+                  </div>
+                  ` : ''}
+                  <div class="info-row">
+                    <span class="label">Entrance Exam Score:</span>
+                    <span class="value"><strong>${candidateScore}</strong></span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">Email:</span>
+                    <span class="value">${email}</span>
+                  </div>
+                </div>
+
+                <p style="color: #555; margin-top: 25px;">
+                  <strong>📌 Note:</strong> This is a system-generated email confirming your shortlist status. 
+                  Please keep this email for your records.
+                </p>
+
+                <p style="margin-top: 30px;">Best Regards,<br><strong>Admissions Committee</strong></p>
+              </div>
+              <div class="footer">
+                <p>This is an automated notification. Please do not reply to this email.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+
+        const emailResult = await sendMail(email, subject, htmlContent);
+
+        if (emailResult.success) {
+          console.log(`✅ Email sent successfully to ${fullName} (${email})`);
+          return { success: true, email, name: fullName };
+        } else {
+          console.error(`❌ Failed to send email to ${fullName} (${email}): ${emailResult.error}`);
+          return { success: false, email, name: fullName, error: emailResult.error };
+        }
+      } catch (error) {
+        console.error(`❌ Error sending email to candidate at index ${index}:`, error.message);
+        return { success: false, error: error.message };
+      }
+    });
+
+    // Wait for all emails to complete (success or failure)
+    const emailResults = await Promise.allSettled(emailPromises);
+
+    const emailStats = emailResults.reduce((acc, result) => {
+      if (result.status === 'fulfilled' && result.value.success) {
+        acc.sent++;
+      } else {
+        acc.failed++;
+      }
+      return acc;
+    }, { sent: 0, failed: 0 });
+
+    console.log(`📧 Email Summary: ${emailStats.sent} sent, ${emailStats.failed} failed`);
+
     res.status(200).json({
       success: true,
       message: "Shortlist generated successfully",
@@ -415,6 +549,11 @@ exports.generateShortlist = async (req, res) => {
         Reserved_Pool_SC: buckets['SC'].length,
         Reserved_Pool_ST: buckets['ST'].length,
         Reserved_Pool_EWS: buckets['EWS'].length
+      },
+      emailNotifications: {
+        sent: emailStats.sent,
+        failed: emailStats.failed,
+        total: finalShortlist.length
       }
     });
 
