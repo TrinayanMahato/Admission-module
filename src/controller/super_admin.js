@@ -1,8 +1,6 @@
 const SuperAdmin = require('../Models/super_admin');
 const POC = require('../Models/poc');
-const RCET_applicants = require('../Models/rcet candidates');
-const Btech_applicants = require('../Models/Btech applicants');
-const BBA_LLB_applicants = require('../Models/BBA LLB applicants');
+const Application = require('../Models/application');
 
 // --- SUPER ADMIN / POC CONTROLLERS ---
 
@@ -42,11 +40,23 @@ exports.createpoc = async (req, res, next) => {
   }
 };
 
-// --- RCET APPLICANTS ---
+// --- UNIFIED APPLICANTS ---
 
-exports.getrcetapplicants = async (req, res) => {
+exports.getApplicants = async (req, res) => {
   try {
-    const allAdmissions = await RCET_applicants.find({}).sort({ createdAt: -1 }).lean();
+    const { departmentId, courseId, status } = req.query;
+
+    const filter = {};
+    if (departmentId) filter.departmentId = departmentId;
+    if (courseId) filter.courseId = courseId;
+    if (status) filter.status = status;
+
+    const allAdmissions = await Application.find(filter)
+      .populate('departmentId')
+      .populate('courseId')
+      .sort({ createdAt: -1 })
+      .lean();
+
     if (!allAdmissions || allAdmissions.length === 0) {
       return res.status(200).json({ success: true, message: "No records found.", count: 0, data: [] });
     }
@@ -56,97 +66,19 @@ exports.getrcetapplicants = async (req, res) => {
   }
 };
 
-exports.getrcetapplicantsbyid = async (req, res) => {
+exports.getApplicantById = async (req, res) => {
   try {
     const { id } = req.params;
-    const admissionData = await RCET_applicants.findById(id).lean();
+    const admissionData = await Application.findById(id)
+      .populate('departmentId')
+      .populate('courseId')
+      .lean();
+
     if (!admissionData) {
       return res.status(404).json({ success: false, message: "No record found with this ID." });
     }
     res.status(200).json({ success: true, data: admissionData });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
-  }
-};
-
-// --- BTECH APPLICANTS ---
-
-exports.getbtechapplicants = async (req, res) => {
-  try {
-    const allAdmissions = await Btech_applicants.find({}).sort({ createdAt: -1 }).lean();
-    if (!allAdmissions || allAdmissions.length === 0) {
-      return res.status(200).json({ success: true, message: "No records found.", count: 0, data: [] });
-    }
-    res.status(200).json({ success: true, count: allAdmissions.length, data: allAdmissions });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-
-exports.getbtechapplicantsbyid = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const admissionData = await Btech_applicants.findById(id).lean();
-    if (!admissionData) {
-      return res.status(404).json({ success: false, message: "No record found with this ID." });
-    }
-    res.status(200).json({ success: true, data: admissionData });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-
-// --- LLB APPLICANTS ---
-
-exports.getllbapplicants = async (req, res) => {
-  try {
-    const allAdmissions = await BBA_LLB_applicants.find({}).sort({ createdAt: -1 }).lean();
-    if (!allAdmissions || allAdmissions.length === 0) {
-      return res.status(200).json({ success: true, message: "No records found.", count: 0, data: [] });
-    }
-    res.status(200).json({ success: true, count: allAdmissions.length, data: allAdmissions });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-
-exports.getllbapplicantsbyid = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const admissionData = await BBA_LLB_applicants.findById(id).lean();
-    if (!admissionData) {
-      return res.status(404).json({ success: false, message: "No record found with this ID." });
-    }
-    res.status(200).json({ success: true, data: admissionData });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-
-// Get applicants by department
-exports.getApplicantsByDepartment = async (req, res) => {
-  try {
-    const { department } = req.params;
-    const applicants = await RCET_applicants.find({ department }).sort({ createdAt: -1 }).lean();
-
-    if (!applicants || applicants.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: `No applications found for department: ${department}`,
-        count: 0,
-        data: []
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      count: applicants.length,
-      data: applicants
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
   }
 };

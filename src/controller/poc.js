@@ -1,87 +1,31 @@
 // src/controller/poc.js
-const RCET_applicants = require('../Models/rcet candidates.js');
-const BBA_LLB_applicants = require('../Models/BBA LLB applicants.js');
-const Btech_applicants = require('../Models/Btech applicants.js');
-const SuperAdmin = require('../Models/super_admin.js');
-const User = require('../Models/user.js');
-const TempUser = require('../Models/temp users.js');
-const POC = require('../Models/poc.js');
+const Application = require('../Models/application.js');
+const Department = require('../Models/department.js');
+const Course = require('../Models/course.js');
 const { sendMail } = require('../utils/email.js');
-
-// Import models from subdirectories with correct file paths and model names
-const SASET = {
-  finalList: require('../Models/saset/saset_final_list'),
-  shortList: require('../Models/saset/saset_short_list')
-};
-
-const SBSFI = {
-  finalList: require('../Models/sbsfi/sbsfi_final_list'),
-  shortList: require('../Models/sbsfi/sbsfi_short_list')
-};
-
-const SCLML = {
-  finalList: require('../Models/sclml/sclml_final_list'),
-  shortList: require('../Models/sclml/sclml_short_list')
-};
-
-const SICMSS = {
-  finalList: require('../Models/sicmss/sicmss_final_list'),
-  shortList: require('../Models/sicmss/sicmss_short_list')
-};
-
-const SICSSL = {
-  finalList: require('../Models/sicssl/sicssl_final_list'),
-  shortList: require('../Models/sicssl/sicssl_short_list')
-};
-
-const SISDSS = {
-  finalList: require('../Models/sisdss/sisdss_final_list'),
-  shortList: require('../Models/sisdss/sisdss_short_list')
-};
-
-const SISSP = {
-  finalList: require('../Models/sissp/sissp_final_list'),
-  shortList: require('../Models/sissp/sissp_shortlist')
-};
-
-const SITAICS = {
-  finalList: require('../Models/sitaics/sitaics_final_list'),
-  shortList: require('../Models/sitaics/sitaics_short_list')
-};
-
-const SPES = {
-  finalList: require('../Models/spes/spes_final_list'),
-  shortList: require('../Models/spes/spes_short_list')
-};
-
-const SPICSM = {
-  finalList: require('../Models/spicsm/spicsm_final_list'),
-  shortList: require('../Models/spicsm/spicsm_short_list')
-};
 
 // Get all applications by department
 exports.getApplicationsByDepartment = async (req, res) => {
   try {
-    const { department } = req.query;
+    const { departmentId, courseId } = req.query;
 
-    if (!department) {
+    if (!departmentId) {
       return res.status(400).json({
         success: false,
-        message: "Department parameter is required"
+        message: "Department ID parameter is required"
       });
     }
 
-    let applications = [];
-
-    // Search based on department type
-    if (department.toLowerCase() === 'btech') {
-      applications = await Btech_applicants.find({}).sort({ createdAt: -1 }).lean();
-    } else if (department.toLowerCase() === 'llb') {
-      applications = await BBA_LLB_applicants.find({}).sort({ createdAt: -1 }).lean();
-    } else {
-      // For other departments, search in RCET_applicants with department filter
-      applications = await RCET_applicants.find({ department }).sort({ createdAt: -1 }).lean();
+    const filter = { departmentId, status: 'submitted' };
+    if (courseId) {
+      filter.courseId = courseId;
     }
+
+    const applications = await Application.find(filter)
+      .populate('departmentId')
+      .populate('courseId')
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.status(200).json({
       success: true,
@@ -96,48 +40,28 @@ exports.getApplicationsByDepartment = async (req, res) => {
   }
 };
 
-
-
 // Get shortlisted applications by department
 exports.getShortlistedByDepartment = async (req, res) => {
   try {
-    const { department } = req.query;
+    const { departmentId, courseId } = req.query;
 
-    if (!department) {
+    if (!departmentId) {
       return res.status(400).json({
         success: false,
-        message: "Department parameter is required"
+        message: "Department ID parameter is required"
       });
     }
 
-    let shortlisted = [];
-    const deptLower = department.toLowerCase();
-
-    // Map of department names to their corresponding shortList models
-    const departmentModels = {
-      'saset': SASET.shortList,
-      'sbsfi': SBSFI.shortList,
-      'sclml': SCLML.shortList,
-      'sicmss': SICMSS.shortList,
-      'sicssl': SICSSL.shortList,
-      'sisdss': SISDSS.shortList,
-      'sissp': SISSP.shortList,
-      'sitaics': SITAICS.shortList,
-      'spes': SPES.shortList,
-      'spicsm': SPICSM.shortList
-    };
-
-    // Get the model for the specified department
-    const model = departmentModels[deptLower];
-    if (!model) {
-      return res.status(404).json({
-        success: false,
-        message: `No shortlist found for department: ${department}`
-      });
+    const filter = { departmentId, status: 'shortlisted' };
+    if (courseId) {
+      filter.courseId = courseId;
     }
 
-    // Find all documents in the department's shortlist
-    shortlisted = await model.find({}).sort({ createdAt: -1 }).lean();
+    const shortlisted = await Application.find(filter)
+      .populate('departmentId')
+      .populate('courseId')
+      .sort({ shortlistedAt: -1 })
+      .lean();
 
     res.status(200).json({
       success: true,
@@ -155,43 +79,25 @@ exports.getShortlistedByDepartment = async (req, res) => {
 // Get final list by department
 exports.getFinalListByDepartment = async (req, res) => {
   try {
-    const { department } = req.query;
+    const { departmentId, courseId } = req.query;
 
-    if (!department) {
+    if (!departmentId) {
       return res.status(400).json({
         success: false,
-        message: "Department parameter is required"
+        message: "Department ID parameter is required"
       });
     }
 
-    let finalList = [];
-    const deptLower = department.toLowerCase();
-
-    // Map of department names to their corresponding finalList models
-    const departmentModels = {
-      'saset': SASET.finalList,
-      'sbsfi': SBSFI.finalList,
-      'sclml': SCLML.finalList,
-      'sicmss': SICMSS.finalList,
-      'sicssl': SICSSL.finalList,
-      'sisdss': SISDSS.finalList,
-      'sissp': SISSP.finalList,
-      'sitaics': SITAICS.finalList,
-      'spes': SPES.finalList,
-      'spicsm': SPICSM.finalList
-    };
-
-    // Get the model for the specified department
-    const model = departmentModels[deptLower];
-    if (!model) {
-      return res.status(404).json({
-        success: false,
-        message: `No final list found for department: ${department}`
-      });
+    const filter = { departmentId, status: 'finalized' };
+    if (courseId) {
+      filter.courseId = courseId;
     }
 
-    // Find all documents in the department's final list
-    finalList = await model.find({}).sort({ createdAt: -1 }).lean();
+    const finalList = await Application.find(filter)
+      .populate('departmentId')
+      .populate('courseId')
+      .sort({ finalizedAt: -1 })
+      .lean();
 
     res.status(200).json({
       success: true,
@@ -209,46 +115,51 @@ exports.getFinalListByDepartment = async (req, res) => {
 // Generate Shortlist Logic
 exports.generateShortlist = async (req, res) => {
   try {
-    const { department, seats } = req.body;
+    const { departmentId, courseId, seats } = req.body;
 
-    if (!department || !seats) {
-      return res.status(400).json({ success: false, message: "Department and seats are required" });
+    if (!departmentId || !courseId || !seats) {
+      return res.status(400).json({
+        success: false,
+        message: "Department ID, course ID, and seats are required"
+      });
     }
 
-    const deptLower = department.toLowerCase();
     const totalSeats = parseInt(seats);
 
-    // 1. Identify Source & Filtering
-    let SourceModel;
-    let query = { status: 'Submitted' }; // Only submitted applications
-    let scoreGetter = (app) => 0; // Default scorer
+    // Verify department and course exist
+    const department = await Department.findById(departmentId);
+    const course = await Course.findById(courseId);
 
-    if (deptLower === 'sitaics') {
-      SourceModel = Btech_applicants;
-      query.department = 'sitaics';
-      scoreGetter = (app) => app.educationDetails?.entranceExam?.scores?.overall || 0;
-    } else if (deptLower === 'saset') {
-      SourceModel = Btech_applicants; // As per updated instruction
-      query.department = 'saset';
-      scoreGetter = (app) => app.educationDetails?.entranceExam?.scores?.overall || 0;
-    } else if (deptLower === 'sclml') {
-      SourceModel = BBA_LLB_applicants;
-      // No department filter for LLB
-      scoreGetter = (app) => app.educationDetails?.entranceExam?.scores?.totalScore || 0;
-    } else {
-      SourceModel = RCET_applicants;
-      query.department = department;
-      scoreGetter = (app) => app.educationDetails?.entranceExam?.overallScore || 0;
+    if (!department || !course) {
+      return res.status(404).json({
+        success: false,
+        message: "Department or course not found"
+      });
     }
 
-    // 2. Fetch Applicants
-    const applicants = await SourceModel.find(query).lean();
+    // 2. Fetch submitted applicants for this department and course
+    const applicants = await Application.find({
+      departmentId,
+      courseId,
+      status: 'submitted'
+    }).lean();
 
     if (applicants.length === 0) {
-      return res.status(200).json({ success: true, message: "No submitted applications found for this department.", count: 0 });
+      return res.status(200).json({
+        success: true,
+        message: "No submitted applications found for this department and course.",
+        count: 0
+      });
     }
 
-    // 3. Sort by Merit (Score Desc, then 12th % Desc)
+    // 3. Score extraction logic
+    const scoreGetter = (app) => {
+      return app.educationDetails?.entranceExam?.scores?.overall ||
+        app.educationDetails?.entranceExam?.scores?.totalScore ||
+        app.educationDetails?.entranceExam?.overallScore || 0;
+    };
+
+    // 4. Sort by Merit (Score Desc, then 12th % Desc)
     const getPercentage = (app) => app.educationDetails?.class12?.percentage || 0;
 
     applicants.sort((a, b) => {
@@ -258,26 +169,6 @@ exports.generateShortlist = async (req, res) => {
       return getPercentage(b) - getPercentage(a);
     });
 
-    // 4. Destination Model (Shortlist)
-    const departmentModels = {
-      'saset': SASET.shortList,
-      'sbsfi': SBSFI.shortList,
-      'sclml': SCLML.shortList,
-      'sicmss': SICMSS.shortList,
-      'sicssl': SICSSL.shortList,
-      'sisdss': SISDSS.shortList,
-      'sissp': SISSP.shortList,
-      'sitaics': SITAICS.shortList,
-      'spes': SPES.shortList,
-      'spicsm': SPICSM.shortList
-    };
-
-    const ShortlistModel = departmentModels[deptLower];
-    if (!ShortlistModel) {
-      return res.status(404).json({ success: false, message: `Invalid Department Code: ${department}` });
-    }
-
-    // 5. Calculate Quotas
     // 5. Calculate Quotas
     const quotas = {
       'OBC': Math.round(totalSeats * 0.27),
@@ -375,35 +266,17 @@ exports.generateShortlist = async (req, res) => {
       finalShortlist = [...finalShortlist, ...catResult.final];
     }
 
-    // 7. Overwrite & Save with Data Mapping
-    await ShortlistModel.deleteMany({});
-
-    const docsToInsert = finalShortlist.map(app => {
-      let doc = { ...app };
-      delete doc._id;
-      delete doc.createdAt;
-      delete doc.updatedAt;
-
-      // Handle 'totalScore' or 'overallScore' -> 'scores.overall' mapping
-      if (!doc.educationDetails) doc.educationDetails = {};
-      if (!doc.educationDetails.entranceExam) doc.educationDetails.entranceExam = {};
-
-      let score = 0;
-      if (deptLower === 'sclml') score = app.educationDetails?.entranceExam?.scores?.totalScore;
-      else if (deptLower === 'sitaics' || deptLower === 'saset') score = app.educationDetails?.entranceExam?.scores?.overall;
-      else score = app.educationDetails?.entranceExam?.overallScore;
-
-      if (!doc.educationDetails.entranceExam.scores) {
-        doc.educationDetails.entranceExam.scores = {};
+    // 7. Update status to 'shortlisted' for selected candidates
+    const selectedIds = finalShortlist.map(app => app._id);
+    await Application.updateMany(
+      { _id: { $in: selectedIds } },
+      {
+        status: 'shortlisted',
+        shortlistedAt: new Date()
       }
-      if (score !== undefined) {
-        doc.educationDetails.entranceExam.scores.overall = score;
-      }
+    );
 
-      return doc;
-    });
-
-    await ShortlistModel.insertMany(docsToInsert);
+    console.log(`✅ Updated ${selectedIds.length} candidates to 'shortlisted' status`);
 
     // 8. Send Email Notifications to Shortlisted Candidates
     console.log('📧 Sending email notifications to shortlisted candidates...');
@@ -435,7 +308,7 @@ exports.generateShortlist = async (req, res) => {
         const candidateScore = scoreGetter(candidate);
 
         // Email subject
-        const subject = `🎉 Congratulations! Shortlisted for ${department.toUpperCase()} Admission`;
+        const subject = `🎉 Congratulations! Shortlisted for ${department.name} - ${course.name}`;
 
         // Email HTML content
         const htmlContent = `
@@ -472,7 +345,11 @@ exports.generateShortlist = async (req, res) => {
                   <h3 style="margin-top: 0; color: #667eea;">📋 Selection Details</h3>
                   <div class="info-row">
                     <span class="label">Department:</span>
-                    <span class="value"><strong>${department.toUpperCase()}</strong></span>
+                    <span class="value"><strong>${department.name}</strong></span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">Course:</span>
+                    <span class="value"><strong>${course.name}</strong></span>
                   </div>
                   <div class="info-row">
                     <span class="label">Category:</span>
@@ -541,8 +418,10 @@ exports.generateShortlist = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Shortlist generated successfully",
+      department: department.name,
+      course: course.name,
       totalSeats,
-      shortlisted: docsToInsert.length,
+      shortlisted: finalShortlist.length,
       breakdown: {
         GEN_Selected: finalGen.length,
         Reserved_Pool_OBC: buckets['OBC'].length,

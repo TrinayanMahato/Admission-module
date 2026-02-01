@@ -8,6 +8,8 @@ const connectDB = require('./config/db.js');
 const adminroutes = require('./router/super_admin.js');
 const applicantroutes = require('./router/applicants.js');
 const pocRoutes = require('./router/poc.js');  // Add this line
+const departmentRoutes = require('./router/department.js');
+const courseRoutes = require('./router/course.js');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -29,6 +31,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 app.use('/api/admin', adminroutes);
 app.use('/api/applicants', applicantroutes);
 app.use('/api/poc', pocRoutes);  // Add this line
+app.use('/api/admin/departments', departmentRoutes);
+app.use('/api/admin/courses', courseRoutes);
 
 // Start the server
 app.listen(port, () => {

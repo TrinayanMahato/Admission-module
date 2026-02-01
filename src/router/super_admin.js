@@ -1,27 +1,22 @@
 const express = require('express');
 const router = express.Router();
 
-const { 
-  createSuperAdmin, 
-  createpoc, 
-  getrcetapplicants, 
-  getrcetapplicantsbyid, 
-  getbtechapplicants, 
-  getbtechapplicantsbyid, 
-  getllbapplicants, 
-  getllbapplicantsbyid,
-  getApplicantsByDepartment 
+const {
+  createSuperAdmin,
+  createpoc,
+  getApplicants,
+  getApplicantById
 } = require('../controller/super_admin.js');
 
-const  {superAdminValidationSchema}  = require('../utils/joi/poc.js');
+const { superAdminValidationSchema } = require('../utils/joi/poc.js');
 
 const validate = (schema) => {
   return (req, res, next) => {
     const { error } = schema.validate(req.body);
     if (error) {
-      return res.status(400).json({ 
-        success: false, 
-        message: error.details[0].message 
+      return res.status(400).json({
+        success: false,
+        message: error.details[0].message
       });
     }
     next();
@@ -31,14 +26,9 @@ const validate = (schema) => {
 router.post('/create/superadmin', validate(superAdminValidationSchema), createSuperAdmin);
 router.post('/create/poc', validate(superAdminValidationSchema), createpoc);
 
-router.get('/rcetapplicants', getrcetapplicants);
-router.get('/rcetapplicants/:id', getrcetapplicantsbyid);
-
-router.get('/btechapplicants', getbtechapplicants);
-router.get('/btechapplicants/:id', getbtechapplicantsbyid);
-
-router.get('/llbapplicants', getllbapplicants);
-router.get('/llbapplicants/:id', getllbapplicantsbyid);
-router.get('/department/:department', getApplicantsByDepartment);
+// Unified Applicants Routes
+// Query params: departmentId, courseId, status (all optional)
+router.get('/applicants', getApplicants);
+router.get('/applicants/:id', getApplicantById);
 
 module.exports = router;

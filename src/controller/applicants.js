@@ -1,107 +1,79 @@
-const RCET_applicants = require('../Models/rcet candidates');
-const Btech_applicants = require('../Models/Btech applicants');
-const BBA_LLB_applicants = require('../Models/BBA LLB applicants');
+const Application = require('../Models/application');
+const Department = require('../Models/department');
+const Course = require('../Models/course');
 const User = require('../Models/user');
 const TempUser = require('../Models/temp users');
 const { sendMail } = require('../utils/email');
 
-exports.createAdmissionrcet = async (req, res) => {
+// Unified application submission
+exports.createApplication = async (req, res) => {
   try {
-    const admissionData = new RCET_applicants(req.body);
+    const { departmentId, courseId, ...applicationData } = req.body;
+
+    // Verify department exists
+    const department = await Department.findById(departmentId);
+    if (!department || !department.isActive) {
+      return res.status(404).json({
+        success: false,
+        message: 'Department not found or inactive'
+      });
+    }
+
+    // Verify course exists and belongs to department
+    const course = await Course.findById(courseId);
+    if (!course || !course.isActive) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found or inactive'
+      });
+    }
+
+    if (course.departmentId.toString() !== departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Course does not belong to the specified department'
+      });
+    }
+
+    // Create application
+    const newApplication = new Application({
+      ...applicationData,
+      departmentId,
+      courseId
+    });
 
     // Handle file uploads
     if (req.files) {
-      if (!admissionData.documents) admissionData.documents = {};
-      const fileFields = ['marksheet12', 'birthCertificate', 'leavingCertificate', 'aadharCard', 'profilePhoto', 'signature', 'categoryCertificate'];
+      if (!newApplication.documents) newApplication.documents = {};
+      const fileFields = ['marksheet12', 'birthCertificate', 'leavingCertificate', 'aadharCard', 'profilePhoto', 'signature', 'categoryCertificate', 'disabilityCertificate'];
 
       fileFields.forEach(field => {
         if (req.files[field] && req.files[field].length > 0) {
-          // Storing relative path for access
-          admissionData.documents[field] = '/uploads/' + req.files[field][0].filename;
+          newApplication.documents[field] = '/uploads/' + req.files[field][0].filename;
         }
       });
     }
 
-    const savedAdmission = await admissionData.save();
+    const savedApplication = await newApplication.save();
+    const populatedApplication = await Application.findById(savedApplication._id)
+      .populate('departmentId')
+      .populate('courseId');
 
     res.status(201).json({
       success: true,
-      message: "Admission record created successfully",
-      data: savedAdmission
+      message: "Application created successfully",
+      data: populatedApplication
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Database insertion failed",
+      message: "Failed to create application",
       error: error.message
     });
   }
 };
 
-exports.createAdmissionbtech = async (req, res) => {
-  try {
-    const newAdmission = new Btech_applicants(req.body);
-
-    // Handle file uploads
-    if (req.files) {
-      if (!newAdmission.documents) newAdmission.documents = {};
-      const fileFields = ['marksheet12', 'birthCertificate', 'leavingCertificate', 'aadharCard', 'profilePhoto', 'signature', 'categoryCertificate'];
-
-      fileFields.forEach(field => {
-        if (req.files[field] && req.files[field].length > 0) {
-          newAdmission.documents[field] = '/uploads/' + req.files[field][0].filename;
-        }
-      });
-    }
-
-    const savedAdmission = await newAdmission.save();
-
-    res.status(201).json({
-      success: true,
-      message: "Admission record created successfully",
-      data: savedAdmission
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "An error occurred while saving the record",
-      error: error.message
-    });
-  }
-};
-
-exports.createAdmissionllb = async (req, res) => {
-  try {
-    const newApplicant = new BBA_LLB_applicants(req.body);
-
-    // Handle file uploads
-    if (req.files) {
-      if (!newApplicant.documents) newApplicant.documents = {};
-      const fileFields = ['marksheet12', 'birthCertificate', 'leavingCertificate', 'aadharCard', 'profilePhoto', 'signature', 'categoryCertificate'];
-
-      fileFields.forEach(field => {
-        if (req.files[field] && req.files[field].length > 0) {
-          newApplicant.documents[field] = '/uploads/' + req.files[field][0].filename;
-        }
-      });
-    }
-
-    const savedApplicant = await newApplicant.save();
-
-    res.status(201).json({
-      success: true,
-      message: "Applicant record created successfully",
-      data: savedApplicant
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to create record",
-      error: error.message
-    });
-  }
-};
-
+// Register user
 exports.registerUser = async (req, res) => {
   try {
     const { email, fullName } = req.body;
@@ -151,6 +123,7 @@ exports.registerUser = async (req, res) => {
   }
 };
 
+// Confirm user registration
 exports.confirmregisterUser = async (req, res) => {
   try {
     const { userId, code } = req.body;
