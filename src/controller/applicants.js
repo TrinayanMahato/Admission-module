@@ -4,6 +4,7 @@ const Course = require('../Models/course');
 const User = require('../Models/user');
 const TempUser = require('../Models/temp users');
 const { sendMail } = require('../utils/email');
+const bcrypt = require('bcrypt');
 
 // Unified application submission
 exports.createApplication = async (req, res) => {
@@ -143,13 +144,16 @@ exports.confirmregisterUser = async (req, res) => {
       });
     }
 
+    // Hash password before saving
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+
     const newUser = new User({
       userId: user._id,
       fullName: user.fullName,
       email: user.email,
       phone: user.phone,
-      password: user.password,
-      confirmPassword: user.confirmPassword,
+      password: hashedPassword,
+      confirmPassword: hashedPassword,
       applicationFees: 'due' // Default status
     });
 

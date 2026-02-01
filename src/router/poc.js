@@ -6,21 +6,25 @@ const {
   getFinalListByDepartment,
   generateShortlist
 } = require('../controller/poc');
+const { verifyAuth } = require('../Middlewares/auth');
 
 // Get all applications by department (and optionally course)
 // Query params: departmentId (required), courseId (optional)
-router.get('/applications', getApplicationsByDepartment);
+// Body: { role: "admin" or "poc" }
+router.get('/applications', verifyAuth, getApplicationsByDepartment);
 
 // Get shortlisted applications by department (and optionally course)
 // Query params: departmentId (required), courseId (optional)
-router.get('/shortlisted', getShortlistedByDepartment);
+// Body: { role: "admin" or "poc" }
+router.get('/shortlisted', verifyAuth, getShortlistedByDepartment);
 
 // Generate Shortlist (Auto-select based on rules)
-// Body: { departmentId, courseId, seats }
-router.post('/generate-shortlist', generateShortlist);
+// Body: { role: "admin" or "poc", departmentId, courseId, seats }
+router.post('/generate-shortlist', verifyAuth, generateShortlist);
 
 // Get final list by department (and optionally course)
 // Query params: departmentId (required), courseId (optional)
-router.get('/final-list', getFinalListByDepartment);
+// Body: { role: "admin" or "poc" }
+router.get('/final-list', verifyAuth, getFinalListByDepartment);
 
 module.exports = router;

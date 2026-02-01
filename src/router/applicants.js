@@ -1,13 +1,15 @@
 const express = require('express');
 const router = express.Router();
 
-// Strictlyusing CommonJS require as type=module is removed
+// Strictly using CommonJS require as type=module is removed
 // Destructuring the functions from the applicants controller
 const {
     createApplication,
     registerUser,
     confirmregisterUser
 } = require('../controller/applicants.js');
+
+const { verifyAuth } = require('../Middlewares/auth.js');
 
 // Define Routes
 const upload = require('../config/multer.js');
@@ -23,11 +25,12 @@ const documentFields = [
     { name: 'disabilityCertificate', maxCount: 1 }
 ];
 
-// Unified application submission route
-router.post('/submit-application', upload.fields(documentFields), createApplication);
-
-// User registration routes
+// Public routes - No authentication required
 router.post('/register', registerUser);
 router.post('/confirm-register', confirmregisterUser);
+
+// Protected route - Requires authentication
+// Body must include: { role: "user", ...otherData }
+router.post('/submit-application', verifyAuth, upload.fields(documentFields), createApplication);
 
 module.exports = router;
