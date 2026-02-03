@@ -4,7 +4,8 @@ const {
   getApplicationsByDepartment,
   getShortlistedByDepartment,
   getFinalListByDepartment,
-  generateShortlist
+  generateShortlist,
+  regenerateShortlist
 } = require('../controller/poc');
 const { verifyAuth } = require('../Middlewares/auth');
 
@@ -21,6 +22,10 @@ router.get('/shortlisted', verifyAuth, getShortlistedByDepartment);
 // Generate Shortlist (Auto-select based on rules)
 // Body: { role: "admin" or "poc", departmentId, courseId, seats }
 router.post('/generate-shortlist', verifyAuth, generateShortlist);
+
+// Regenerate Shortlist (Second/Subsequent Round - Auto-fill empty seats)
+// Body: { role: "admin" or "poc", departmentId, courseId }
+router.post('/regenerate-shortlist', verifyAuth, regenerateShortlist);
 
 // Get final list by department (and optionally course)
 // Query params: departmentId (required), courseId (optional)
