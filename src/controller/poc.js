@@ -3,17 +3,15 @@ const Application = require('../Models/application.js');
 const Department = require('../Models/department.js');
 const Course = require('../Models/course.js');
 const { sendMail } = require('../utils/email.js');
+const AppError = require('../Error_class/error_class.js');
 
 // Get all applications by department
-exports.getApplicationsByDepartment = async (req, res) => {
+exports.getApplicationsByDepartment = async (req, res, next) => {
   try {
     const { departmentId, courseId } = req.query;
 
     if (!departmentId) {
-      return res.status(400).json({
-        success: false,
-        message: "Department ID parameter is required"
-      });
+      throw new AppError('Department ID parameter is required', 400);
     }
 
     const filter = { departmentId, status: 'submitted' };
@@ -33,23 +31,17 @@ exports.getApplicationsByDepartment = async (req, res) => {
       data: applications
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 };
 
 // Get shortlisted applications by department
-exports.getShortlistedByDepartment = async (req, res) => {
+exports.getShortlistedByDepartment = async (req, res, next) => {
   try {
     const { departmentId, courseId } = req.query;
 
     if (!departmentId) {
-      return res.status(400).json({
-        success: false,
-        message: "Department ID parameter is required"
-      });
+      throw new AppError('Department ID parameter is required', 400);
     }
 
     const filter = { departmentId, status: 'shortlisted' };
@@ -69,23 +61,17 @@ exports.getShortlistedByDepartment = async (req, res) => {
       data: shortlisted
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 };
 
 // Get final list by department
-exports.getFinalListByDepartment = async (req, res) => {
+exports.getFinalListByDepartment = async (req, res, next) => {
   try {
     const { departmentId, courseId } = req.query;
 
     if (!departmentId) {
-      return res.status(400).json({
-        success: false,
-        message: "Department ID parameter is required"
-      });
+      throw new AppError('Department ID parameter is required', 400);
     }
 
     const filter = { departmentId, status: 'finalized' };
@@ -105,23 +91,17 @@ exports.getFinalListByDepartment = async (req, res) => {
       data: finalList
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 };
 
 // Generate Shortlist Logic
-exports.generateShortlist = async (req, res) => {
+exports.generateShortlist = async (req, res, next) => {
   try {
     const { departmentId, courseId, seats } = req.body;
 
     if (!departmentId || !courseId || !seats) {
-      return res.status(400).json({
-        success: false,
-        message: "Department ID, course ID, and seats are required"
-      });
+      throw new AppError('Department ID, course ID, and seats are required', 400);
     }
 
     const totalSeats = parseInt(seats);
@@ -131,10 +111,7 @@ exports.generateShortlist = async (req, res) => {
     const course = await Course.findById(courseId);
 
     if (!department || !course) {
-      return res.status(404).json({
-        success: false,
-        message: "Department or course not found"
-      });
+      throw new AppError('Department or course not found', 404);
     }
 
     // 2. Fetch submitted applicants for this department and course
@@ -438,20 +415,17 @@ exports.generateShortlist = async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 };
 
 // Regenerate Shortlist (Second/Subsequent Round)
-exports.regenerateShortlist = async (req, res) => {
+exports.regenerateShortlist = async (req, res, next) => {
   try {
     const { departmentId, courseId } = req.body;
 
     if (!departmentId || !courseId) {
-      return res.status(400).json({
-        success: false,
-        message: "Department ID and course ID are required"
-      });
+      throw new AppError('Department ID and course ID are required', 400);
     }
 
     // 1. Verify department and course exist
@@ -459,10 +433,7 @@ exports.regenerateShortlist = async (req, res) => {
     const course = await Course.findById(courseId);
 
     if (!department || !course) {
-      return res.status(404).json({
-        success: false,
-        message: "Department or course not found"
-      });
+      throw new AppError('Department or course not found', 404);
     }
 
     const totalSeats = course.totalSeats;
@@ -844,6 +815,6 @@ exports.regenerateShortlist = async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 };

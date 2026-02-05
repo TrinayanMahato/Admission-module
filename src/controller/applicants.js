@@ -5,35 +5,27 @@ const User = require('../Models/user');
 const TempUser = require('../Models/temp users');
 const { sendMail } = require('../utils/email');
 const bcrypt = require('bcrypt');
+const AppError = require('../Error_class/error_class');
 
 // Unified application submission
-exports.createApplication = async (req, res) => {
+exports.createApplication = async (req, res, next) => {
   try {
     const { departmentId, courseId, ...applicationData } = req.body;
 
     // Verify department exists
     const department = await Department.findById(departmentId);
     if (!department || !department.isActive) {
-      return res.status(404).json({
-        success: false,
-        message: 'Department not found or inactive'
-      });
+      throw new AppError('Department not found or inactive', 404);
     }
 
     // Verify course exists and belongs to department
     const course = await Course.findById(courseId);
     if (!course || !course.isActive) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found or inactive'
-      });
+      throw new AppError('Course not found or inactive', 404);
     }
 
     if (course.departmentId.toString() !== departmentId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Course does not belong to the specified department'
-      });
+      throw new AppError('Course does not belong to the specified department', 400);
     }
 
     // Create application
@@ -66,16 +58,12 @@ exports.createApplication = async (req, res) => {
       data: populatedApplication
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to create application",
-      error: error.message
-    });
+    next(error);
   }
 };
 
 // Register user
-exports.registerUser = async (req, res) => {
+exports.registerUser = async (req, res, next) => {
   try {
     const { email, fullName } = req.body;
 
@@ -92,11 +80,7 @@ exports.registerUser = async (req, res) => {
     const emailResult = await sendMail(email, subject, htmlContent);
 
     if (!emailResult.success) {
-      return res.status(500).json({
-        success: false,
-        message: "Registration failed: Email service error.",
-        error: emailResult.error
-      });
+      throw new AppError('Registration failed: Email service error', 500);
     }
 
     const newUser = new TempUser({
@@ -118,30 +102,24 @@ exports.registerUser = async (req, res) => {
 
   } catch (error) {
     if (error.code === 11000) {
-      return res.status(400).json({ success: false, message: "Email already exists" });
+      return next(new AppError('Email already exists', 400));
     }
-    res.status(500).json({ success: false, message: "Registration failed", error: error.message });
+    next(error);
   }
 };
 
 // Confirm user registration
-exports.confirmregisterUser = async (req, res) => {
+exports.confirmregisterUser = async (req, res, next) => {
   try {
     const { userId, code } = req.body;
     const user = await TempUser.findById(userId);
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found"
-      });
+      throw new AppError('User not found', 404);
     }
 
     if (user.code !== code) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid verification code"
-      });
+      throw new AppError('Invalid verification code', 400);
     }
 
     // Hash password before saving
@@ -170,10 +148,6 @@ exports.confirmregisterUser = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Verification process failed",
-      error: error.message
-    });
+    next(error);
   }
 };

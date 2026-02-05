@@ -3,27 +3,22 @@ const bcrypt = require('bcrypt');
 const SuperAdmin = require('../Models/super_admin');
 const POC = require('../Models/poc');
 const User = require('../Models/user');
+const AppError = require('../Error_class/error_class');
 
 // Login endpoint
-exports.login = async (req, res) => {
+exports.login = async (req, res, next) => {
     try {
         const { email, password, role } = req.body;
 
         // Validate input
         if (!email || !password || !role) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email, password, and role are required'
-            });
+            throw new AppError('Email, password, and role are required', 400);
         }
 
         // Validate role
         const validRoles = ['admin', 'poc', 'user'];
         if (!validRoles.includes(role)) {
-            return res.status(400).json({
-                success: false,
-                message: `Invalid role. Must be one of: ${validRoles.join(', ')}`
-            });
+            throw new AppError(`Invalid role. Must be one of: ${validRoles.join(', ')}`, 400);
         }
 
         // Find user based on role
@@ -45,20 +40,14 @@ exports.login = async (req, res) => {
         user = await Model.findOne({ email });
 
         if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid credentials'
-            });
+            throw new AppError('Invalid credentials', 401);
         }
 
         // Compare password with hashed password in database
         const isPasswordValid = await bcrypt.compare(password, user.password);
 
         if (!isPasswordValid) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid credentials'
-            });
+            throw new AppError('Invalid credentials', 401);
         }
 
         // Generate JWT token
@@ -89,10 +78,7 @@ exports.login = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Login failed',
-            error: error.message
-        });
+        // Pass error to global error handler
+        next(error);
     }
 };

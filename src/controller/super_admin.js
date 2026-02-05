@@ -4,6 +4,7 @@ const Application = require('../Models/application');
 const Department = require('../Models/department');
 const Course = require('../Models/course');
 const bcrypt = require('bcrypt');
+const AppError = require('../Error_class/error_class');
 
 // --- SUPER ADMIN / POC CONTROLLERS ---
 
@@ -11,7 +12,7 @@ exports.createSuperAdmin = async (req, res, next) => {
   try {
     const existingAdmin = await SuperAdmin.findOne({ email: req.body.email });
     if (existingAdmin) {
-      return res.status(400).json({ success: false, message: 'A user with this email already exists' });
+      throw new AppError('A user with this email already exists', 400);
     }
 
     // Hash password before saving
@@ -27,7 +28,7 @@ exports.createSuperAdmin = async (req, res, next) => {
       data: { admin: newAdmin }
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    next(err);
   }
 };
 
@@ -35,7 +36,7 @@ exports.createpoc = async (req, res, next) => {
   try {
     const existingAdmin = await SuperAdmin.findOne({ email: req.body.email });
     if (existingAdmin) {
-      return res.status(400).json({ success: false, message: 'A user with this email already exists' });
+      throw new AppError('A user with this email already exists', 400);
     }
 
     // Hash password before saving
@@ -51,13 +52,13 @@ exports.createpoc = async (req, res, next) => {
       data: { admin: newAdmin }
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    next(err);
   }
 };
 
 // --- UNIFIED APPLICANTS ---
 
-exports.getApplicants = async (req, res) => {
+exports.getApplicants = async (req, res, next) => {
   try {
     const { departmentId, courseId, status } = req.query;
 
@@ -77,11 +78,11 @@ exports.getApplicants = async (req, res) => {
     }
     res.status(200).json({ success: true, count: allAdmissions.length, data: allAdmissions });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 };
 
-exports.getApplicantById = async (req, res) => {
+exports.getApplicantById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const admissionData = await Application.findById(id)
@@ -90,26 +91,23 @@ exports.getApplicantById = async (req, res) => {
       .lean();
 
     if (!admissionData) {
-      return res.status(404).json({ success: false, message: "No record found with this ID." });
+      throw new AppError('No record found with this ID', 404);
     }
     res.status(200).json({ success: true, data: admissionData });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 };
 
 // --- DEPARTMENT MANAGEMENT ---
 
-exports.createDepartment = async (req, res) => {
+exports.createDepartment = async (req, res, next) => {
   try {
     const { name, code, description } = req.body;
 
     const existingDept = await Department.findOne({ code });
     if (existingDept) {
-      return res.status(400).json({
-        success: false,
-        message: 'Department code already exists'
-      });
+      throw new AppError('Department code already exists', 400);
     }
 
     const department = await Department.create({
@@ -124,14 +122,11 @@ exports.createDepartment = async (req, res) => {
       data: department
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 };
 
-exports.getAllDepartments = async (req, res) => {
+exports.getAllDepartments = async (req, res, next) => {
   try {
     const { isActive } = req.query;
     const filter = isActive !== undefined ? { isActive: isActive === 'true' } : {};
@@ -144,23 +139,17 @@ exports.getAllDepartments = async (req, res) => {
       data: departments
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 };
 
-exports.getDepartmentById = async (req, res) => {
+exports.getDepartmentById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const department = await Department.findById(id);
 
     if (!department) {
-      return res.status(404).json({
-        success: false,
-        message: 'Department not found'
-      });
+      throw new AppError('Department not found', 404);
     }
 
     res.status(200).json({
@@ -168,14 +157,11 @@ exports.getDepartmentById = async (req, res) => {
       data: department
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 };
 
-exports.updateDepartment = async (req, res) => {
+exports.updateDepartment = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -186,10 +172,7 @@ exports.updateDepartment = async (req, res) => {
         _id: { $ne: id }
       });
       if (existingDept) {
-        return res.status(400).json({
-          success: false,
-          message: 'Department code already exists'
-        });
+        throw new AppError('Department code already exists', 400);
       }
     }
 
@@ -200,10 +183,7 @@ exports.updateDepartment = async (req, res) => {
     );
 
     if (!department) {
-      return res.status(404).json({
-        success: false,
-        message: 'Department not found'
-      });
+      throw new AppError('Department not found', 404);
     }
 
     res.status(200).json({
@@ -212,14 +192,11 @@ exports.updateDepartment = async (req, res) => {
       data: department
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 };
 
-exports.deleteDepartment = async (req, res) => {
+exports.deleteDepartment = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -230,10 +207,7 @@ exports.deleteDepartment = async (req, res) => {
     );
 
     if (!department) {
-      return res.status(404).json({
-        success: false,
-        message: 'Department not found'
-      });
+      throw new AppError('Department not found', 404);
     }
 
     res.status(200).json({
@@ -242,33 +216,24 @@ exports.deleteDepartment = async (req, res) => {
       data: department
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 };
 
 // --- COURSE MANAGEMENT ---
 
-exports.createCourse = async (req, res) => {
+exports.createCourse = async (req, res, next) => {
   try {
     const { name, code, departmentId, duration, totalSeats } = req.body;
 
     const department = await Department.findById(departmentId);
     if (!department) {
-      return res.status(404).json({
-        success: false,
-        message: 'Department not found'
-      });
+      throw new AppError('Department not found', 404);
     }
 
     const existingCourse = await Course.findOne({ code });
     if (existingCourse) {
-      return res.status(400).json({
-        success: false,
-        message: 'Course code already exists'
-      });
+      throw new AppError('Course code already exists', 400);
     }
 
     const course = await Course.create({
@@ -287,14 +252,11 @@ exports.createCourse = async (req, res) => {
       data: populatedCourse
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 };
 
-exports.getAllCourses = async (req, res) => {
+exports.getAllCourses = async (req, res, next) => {
   try {
     const { isActive } = req.query;
     const filter = isActive !== undefined ? { isActive: isActive === 'true' } : {};
@@ -309,14 +271,11 @@ exports.getAllCourses = async (req, res) => {
       data: courses
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 };
 
-exports.getCoursesByDepartment = async (req, res) => {
+exports.getCoursesByDepartment = async (req, res, next) => {
   try {
     const { deptId } = req.params;
     const { isActive } = req.query;
@@ -336,23 +295,17 @@ exports.getCoursesByDepartment = async (req, res) => {
       data: courses
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 };
 
-exports.getCourseById = async (req, res) => {
+exports.getCourseById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const course = await Course.findById(id).populate('departmentId');
 
     if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
+      throw new AppError('Course not found', 404);
     }
 
     res.status(200).json({
@@ -360,14 +313,11 @@ exports.getCourseById = async (req, res) => {
       data: course
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 };
 
-exports.updateCourse = async (req, res) => {
+exports.updateCourse = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -375,10 +325,7 @@ exports.updateCourse = async (req, res) => {
     if (updates.departmentId) {
       const department = await Department.findById(updates.departmentId);
       if (!department) {
-        return res.status(404).json({
-          success: false,
-          message: 'Department not found'
-        });
+        throw new AppError('Department not found', 404);
       }
     }
 
@@ -388,10 +335,7 @@ exports.updateCourse = async (req, res) => {
         _id: { $ne: id }
       });
       if (existingCourse) {
-        return res.status(400).json({
-          success: false,
-          message: 'Course code already exists'
-        });
+        throw new AppError('Course code already exists', 400);
       }
     }
 
@@ -402,10 +346,7 @@ exports.updateCourse = async (req, res) => {
     ).populate('departmentId');
 
     if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
+      throw new AppError('Course not found', 404);
     }
 
     res.status(200).json({
@@ -414,14 +355,11 @@ exports.updateCourse = async (req, res) => {
       data: course
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 };
 
-exports.deleteCourse = async (req, res) => {
+exports.deleteCourse = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -432,10 +370,7 @@ exports.deleteCourse = async (req, res) => {
     ).populate('departmentId');
 
     if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
+      throw new AppError('Course not found', 404);
     }
 
     res.status(200).json({
@@ -444,9 +379,6 @@ exports.deleteCourse = async (req, res) => {
       data: course
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    next(error);
   }
 };
