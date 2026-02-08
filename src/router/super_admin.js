@@ -21,25 +21,14 @@ const {
   deleteCourse
 } = require('../controller/super_admin.js');
 
-const { superAdminValidationSchema } = require('../utils/joi/poc.js');
+const { superAdminValidationSchema } = require('../utils/joi/superAdmin.js');
+const { pocValidationSchema } = require('../utils/joi/pocSchema.js');
 const { verifyAuth } = require('../Middlewares/auth.js');
-
-const validate = (schema) => {
-  return (req, res, next) => {
-    const { error } = schema.validate(req.body);
-    if (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.details[0].message
-      });
-    }
-    next();
-  };
-};
+const { validate } = require('../Middlewares/validator.js');
 
 // Super Admin & POC creation
 router.post('/create/superadmin', verifyAuth, validate(superAdminValidationSchema), createSuperAdmin);
-router.post('/create/poc', verifyAuth, validate(superAdminValidationSchema), createpoc);
+router.post('/create/poc', verifyAuth, validate(pocValidationSchema), createpoc);
 
 // Applicants
 router.get('/applicants', verifyAuth, getApplicants);

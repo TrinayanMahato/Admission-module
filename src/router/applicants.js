@@ -10,6 +10,9 @@ const {
 } = require('../controller/applicants.js');
 
 const { verifyAuth } = require('../Middlewares/auth.js');
+const { validate } = require('../Middlewares/validator.js');
+const { userRegistrationSchema } = require('../utils/joi/user.js');
+const { applicationSubmissionSchema } = require('../utils/joi/application.js');
 
 // Define Routes
 const upload = require('../config/multer.js');
@@ -26,11 +29,11 @@ const documentFields = [
 ];
 
 // Public routes - No authentication required
-router.post('/register', registerUser);
+router.post('/register', validate(userRegistrationSchema), registerUser);
 router.post('/confirm-register', confirmregisterUser);
 
 // Protected route - Requires authentication
 // Body must include: { role: "user", ...otherData }
-router.post('/submit-application', verifyAuth, upload.fields(documentFields), createApplication);
+router.post('/submit-application', verifyAuth, validate(applicationSubmissionSchema), upload.fields(documentFields), createApplication);
 
 module.exports = router;

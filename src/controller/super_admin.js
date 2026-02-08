@@ -34,9 +34,16 @@ exports.createSuperAdmin = async (req, res, next) => {
 
 exports.createpoc = async (req, res, next) => {
   try {
+    // Check if email exists in SuperAdmin table
     const existingAdmin = await SuperAdmin.findOne({ email: req.body.email });
     if (existingAdmin) {
       throw new AppError('A user with this email already exists', 400);
+    }
+
+    // Check if email exists in POC table
+    const existingPOC = await POC.findOne({ email: req.body.email });
+    if (existingPOC) {
+      throw new AppError('A POC with this email already exists', 400);
     }
 
     // Hash password before saving

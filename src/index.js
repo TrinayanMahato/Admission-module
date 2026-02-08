@@ -9,6 +9,7 @@ const adminroutes = require('./router/super_admin.js');
 const applicantroutes = require('./router/applicants.js');
 const pocRoutes = require('./router/poc.js');
 const authRoutes = require('./router/auth.js');
+const paymentRoutes = require('./router/payment.js');
 const errorHandler = require('./Middlewares/errorHandler.js');
 
 const app = express();
@@ -32,6 +33,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminroutes);
 app.use('/api/applicants', applicantroutes);
 app.use('/api/poc', pocRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // Global Error Handler (MUST be last middleware)
 app.use(errorHandler);
