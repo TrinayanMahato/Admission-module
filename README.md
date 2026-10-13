@@ -11,6 +11,7 @@ Built with Express 5, MongoDB/Mongoose, JWT auth, and Joi request validation.
 ## Table of Contents
 
 - [Overview](#overview)
+- [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
@@ -18,7 +19,6 @@ Built with Express 5, MongoDB/Mongoose, JWT auth, and Joi request validation.
 - [API Reference](#api-reference)
 - [Data Models](#data-models)
 - [How Shortlisting Works](#how-shortlisting-works)
-- [Roadmap](#roadmap)
 
 ---
 
@@ -37,6 +37,100 @@ timestamps recorded at each transition (`submittedAt`, `shortlistedAt`, `finaliz
 `rejectedAt`).
 
 ---
+
+## Architecture
+
+A conventional layered Express application. Each request falls through the same chain, and
+each layer has exactly one job.
+
+```
+   REQUEST
+      │
+      ▼
+┌──────────────┐   src/router/*.js
+│   ROUTER     │   auth · applicants · poc · super_admin · payment
+└──────┬───────┘
+       ▼
+┌──────────────┐   src/Middlewares/
+│  MIDDLEWARE  │   verifyAuth  →  validate(joiSchema)  →  multer upload
+└──────┬───────┘   (identity)     (shape)                (files)
+       ▼
+┌──────────────┐   src/controller/*.js
+│  CONTROLLER  │   business rules only — no req/res parsing, no queries inline
+└──────┬───────┘
+       ▼
+┌──────────────┐   src/Models/*.js  (Mongoose schemas)
+│    MODEL     │   Application · Course · Department · User · TempUser · POC
+└──────┬───────┘
+       ▼
+    MongoDB
+
+   Any thrown AppError unwinds to src/Middlewares/errorHandler.js,
+   which is mounted last and owns every error response shape.
+```
+
+### The layers
+
+| Layer | Responsibility | Does **not** |
+| :--- | :--- | :--- |
+| **Router** | Map URL + verb to a handler, declare the middleware chain | Contain logic |
+| **Middleware** | Authenticate, validate shape, accept files | Touch the database |
+| **Controller** | Enforce business rules, orchestrate models | Format errors |
+| **Model** | Schema, constraints, indexes | Know about HTTP |
+| **Error handler** | Translate `AppError` into a response | Appear anywhere but last |
+
+Because `errorHandler` is mounted after every route, controllers throw
+`new AppError(message, statusCode)` and stop. There is no error formatting scattered
+through the controllers — a single place decides what the client sees.
+
+### Two-phase registration
+
+Signups do not create a user. They create a `TempUser` holding a confirmation `code`, and
+only a successful `POST /api/applicants/confirm-register` promotes that record into the
+`User` collection.
+
+```
+POST /register          POST /confirm-register
+      │                          │
+      ▼                          ▼
+  ┌─────────┐   emailed code  ┌──────┐
+  │TempUser │ ──────────────► │ User │ ──► may submit an application
+  └─────────┘                 └──────┘
+```
+
+This keeps unverified addresses out of the main collection entirely, so the unique index
+on `User.email` is never consumed by an address nobody owns.
+
+### Application lifecycle
+
+An `Application` is a single document with five sub-documents — `studentDetails`,
+`familyDetails`, `educationDetails`, `otherDetails`, `extraCurricular` — plus `documents`,
+`departmentId`, `courseId` and `fees`. It moves through states, stamping a timestamp at
+each transition:
+
+```
+submitted ──► shortlisted ──► finalized
+    │              │
+    └──────────────┴──► rejected
+  submittedAt   shortlistedAt   finalizedAt / rejectedAt
+```
+
+Storing the whole application as one document is deliberate: it is always read as a whole,
+never joined against, so embedding beats normalising here.
+
+### File handling
+
+`src/config/multer.js` accepts eight named document fields and writes them to
+`src/public/uploads`, served back as static files from `/uploads`. Uploads run **after**
+`verifyAuth` and `validate` in the chain, so an unauthenticated or malformed request is
+rejected before anything is written to disk.
+
+### Authorization
+
+A single `verifyAuth` middleware verifies the JWT and attaches the caller. Role separation
+is then enforced by *route grouping* rather than per-handler checks — `/api/admin/*`,
+`/api/poc/*` and `/api/applicants/*` each mount their own router, so a route's position in
+the tree is what determines who may reach it.
 
 ## Tech Stack
 
@@ -209,11 +303,3 @@ Because the score lookup falls back to `0`, applicants with a differently-shaped
 import data from another source.
 
 ---
-
-## Roadmap
-
-- [ ] Add `.env` to `.gitignore` and rotate the previously committed secrets
-- [ ] Payment gateway integration (the current endpoint only reads a stored status)
-- [ ] Automated tests — `npm test` is still the default placeholder
-- [ ] Move uploads to object storage instead of the local `src/public/uploads` directory
-- [ ] Add a `LICENSE` file
